@@ -12,18 +12,8 @@ if not GUARDIAN_API_KEY:
     raise ValueError(
         "API key not found. Please set the 'api_key' environment variable."
     )
-
-parser = argparse.ArgumentParser(description="Fetch articles from The Guardian API")
-parser.add_argument("search_term", type=str, help="Search term for the Guardian API")
-parser.add_argument(
-    "date_from", type=str, help="enter the date you are interested in..(YYYY-MM-DD)"
-)
-parser.add_argument("stream_name", type=str, help="Name of the message broker stream")
-
-args = parser.parse_args()
-search_term = args.search_term
-date_from = args.date_from
-stream_name = args.stream_name
+ 
+ 
 
 
 def get_articles(search_term, date_from):
@@ -77,6 +67,31 @@ def publish_to_kinesis(articles,stream_name):  #takes articles as input
 def lambda_handler(event,context):
     pass
 
- 
+
+def main():
+    parser = argparse.ArgumentParser(description="Fetch articles from The Guardian API")
+    parser.add_argument("search_term", type=str, help="Search term for the Guardian API")
+    parser.add_argument(
+        "date_from", type=str, help="enter the date you are interested in..(YYYY-MM-DD)"
+    )
+    parser.add_argument("stream_name", type=str, help="Name of the message broker stream")
+
+    args = parser.parse_args()
+    search_term = args.search_term
+    date_from = args.date_from
+    stream_name = args.stream_name
+    
+    
+    articles = get_articles(search_term, date_from)
+    if articles:
+        publish_to_kinesis(articles, stream_name)
+        print(f"Successfully fetched and published {len(articles)} articles")
+    else:
+        print("No articles found or an error occurred")
+
+
+# Only run when script is executed directly
+if __name__ == "__main__":
+    main()
 
   
