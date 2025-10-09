@@ -1,26 +1,21 @@
-from guardian_data_streamer.api_client import GuardianAPIClient
-from guardian_data_streamer.message_broker import MessageBroker
+"""
+Handles the overall streaming process.
+Fetches articles from The Guardian API and publishes them to an AWS Kinesis stream.
+"""
 
+from StreamingDataProject.guardian_client import GuardianAPIClient
+from StreamingDataProject.kinesis_publisher import publish_to_kinesis
+from logger import get_logger
+logger = get_logger(__name__)
 
 class GuardianStreamer:
-    """Coordinates fetching Guardian articles and sending them to the broker."""
+    def __init__(self, api_key):
+        self.client = GuardianAPIClient(api_key)
 
-    def __init__(self, api_client=None, broker=None):
-        self.api_client = api_client or GuardianAPIClient()
-        self.broker = broker
-
-    def run(self, search_term: str, date_from: str = None, limit: int = 10):
-        print(f"Searching for '{search_term}' (from {date_from or 'any date'})...")
-        articles = self.api_client.fetch_articles(search_term, date_from, limit)
-
-        if not articles:
-            print("No articles found.")
-            return
-
-        if not self.broker:
-            print("No message broker provided. Printing JSON locally:")
-            import json
-            print(json.dumps(articles, indent=2))
-            return
-
-        self.broker.publish(articles)
+    def run(self, search_term, date_from, stream_name):
+        articles = self.client.get_articles(search_term, date_from)
+        if articles:
+            publish_to_kinesis(articles, stream_name)
+            logger.info(f" Published {len(articles)} articles to {stream_name}")
+        else:
+            logger.info(f"No articles found.")

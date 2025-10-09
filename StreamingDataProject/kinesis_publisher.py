@@ -1,6 +1,17 @@
+"""
+Handles publishing messages to an AWS Kinesis stream. 
+If the specified stream does not exist, it will be created.
+
+This can also be used on local machine using Kinesalite by providing the endpoint_url parameter
+to the KinesisPublisher class allowing you to test locally.
+"""
+
 import json
 import boto3
 import botocore
+from logger import get_logger
+logger = get_logger(__name__)
+
 
 
 class KinesisPublisher:
@@ -13,28 +24,14 @@ class KinesisPublisher:
         endpoint_url=None,
         shard_count=1
     ):
-        """
-        Initializes the KinesisPublisher with connection details.
-        
-        Works both for local Kinesis (Kinesalite/LocalStack) and real AWS Kinesis.
-        
-        :param stream_name: Name of the Kinesis stream
-        :param region_name: AWS region name
-        :param aws_access_key_id: AWS access key ID (optional for AWS, required for local)
-        :param aws_secret_access_key: AWS secret access key (optional for AWS, required for local)
-        :param endpoint_url: Optional endpoint URL (e.g., http://localhost:4567 for local using something like kinesalite)
-        :param shard_count: Number of shards for the stream if creating
-        """
+        # Initialize the Kinesis client
         self.stream_name = stream_name
         self.shard_count = shard_count
 
-        # Create Kinesis client
-        client_params = {
-            "region_name": region_name,
-            "aws_access_key_id": aws_access_key_id,
-            "aws_secret_access_key": aws_secret_access_key,
-        }
-
+        client_params = {"region_name": region_name}
+        if aws_access_key_id and aws_secret_access_key:
+            client_params["aws_access_key_id"] = aws_access_key_id
+            client_params["aws_secret_access_key"] = aws_secret_access_key
         if endpoint_url:
             client_params["endpoint_url"] = endpoint_url
 
@@ -44,11 +41,7 @@ class KinesisPublisher:
         self._ensure_stream_exists()
 
     def publish_articles(self, articles):
-        """
-        Publishes a list of articles to the Kinesis stream.
-
-        :param articles: List of dictionaries or objects to send to Kinesis
-        """
+        """Publish a list of articles to the Kinesis stream."""
         try:
             for article in articles:
                 self.kinesis.put_record(
@@ -57,25 +50,45 @@ class KinesisPublisher:
                     PartitionKey="1",
                 )
         except botocore.exceptions.ClientError as e:
-            print(f"Error publishing to Kinesis: {e}")
+            logger.error(f"Error publishing to Kinesis: {e}")
             return
-        print(f"Published {len(articles)} articles to Kinesis stream '{self.stream_name}'")
+
+        logger.info(f"Published {len(articles)} articles to Kinesis stream '{self.stream_name}'")
 
     def _ensure_stream_exists(self):
-        """Creates the stream if it doesn't exist and waits until it's active."""
+        """Ensure the stream exists and has at least 72-hour retention."""
         try:
             response = self.kinesis.describe_stream(StreamName=self.stream_name)
             status = response["StreamDescription"]["StreamStatus"]
             if status != "ACTIVE":
-                print(f"Waiting for stream '{self.stream_name}' to become ACTIVE...")
+                logger.info(f"Waiting for stream '{self.stream_name}' to become ACTIVE...")
                 waiter = self.kinesis.get_waiter("stream_exists")
                 waiter.wait(StreamName=self.stream_name)
+
+            # Increase retention if less than 72 hours
+            current_retention = response["StreamDescription"].get("RetentionPeriodHours", 24)
+            if current_retention < 72:
+                logger.info(f"Updating stream '{self.stream_name}' retention to 3 days...")
+                self.kinesis.increase_stream_retention_period(
+                    StreamName=self.stream_name,
+                    RetentionPeriodHours=72
+                )
+
         except self.kinesis.exceptions.ResourceNotFoundException:
-            print(f"Stream '{self.stream_name}' not found. Creating it...")
+            # Stream doesn't exist, create it
+            logger.info(f"Stream '{self.stream_name}' not found. Creating it...")
             self.kinesis.create_stream(
-                StreamName=self.stream_name, ShardCount=self.shard_count
+                StreamName=self.stream_name,
+                ShardCount=self.shard_count
             )
-            print(f"Waiting for stream '{self.stream_name}' to become ACTIVE...")
+            logger.info(f"Waiting for stream '{self.stream_name}' to become ACTIVE...")
             waiter = self.kinesis.get_waiter("stream_exists")
             waiter.wait(StreamName=self.stream_name)
-            print(f"Stream '{self.stream_name}' is now ACTIVE.")
+            logger.info(f"Stream '{self.stream_name}' is now ACTIVE.")
+
+            # Set retention to 72 hours directly
+            logger.info(f"Setting stream '{self.stream_name}' retention to 3 days...")
+            self.kinesis.increase_stream_retention_period(
+                StreamName=self.stream_name,
+                RetentionPeriodHours=72
+            )
