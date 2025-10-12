@@ -4,8 +4,15 @@ import json
 import boto3
 from dotenv import load_dotenv
 
-def read_kinesis_stream(stream_name, region_name, aws_access_key_id,
-                        aws_secret_access_key, endpoint_url=None, limit=10):
+
+def read_kinesis_stream(
+    stream_name,
+    region_name,
+    aws_access_key_id,
+    aws_secret_access_key,
+    endpoint_url=None,
+    limit=10,
+):
     """
     Reads records from a Kinesis stream.
     """
@@ -30,7 +37,7 @@ def read_kinesis_stream(stream_name, region_name, aws_access_key_id,
     shard_iterator = kinesis.get_shard_iterator(
         StreamName=stream_name,
         ShardId=shard_id,
-        ShardIteratorType="TRIM_HORIZON"
+        ShardIteratorType="TRIM_HORIZON",
     )["ShardIterator"]
 
     # Fetch records
@@ -55,7 +62,6 @@ if __name__ == "__main__":
 
     stream_name = sys.argv[1]
 
-    # Load .env file
     load_dotenv()
 
     AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")

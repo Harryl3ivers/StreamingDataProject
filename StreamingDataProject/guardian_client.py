@@ -1,8 +1,10 @@
 import os
 import requests
 from datetime import datetime
-from logger import get_logger
+from StreamingDataProject.logger import get_logger
+
 logger = get_logger(__name__)
+
 
 class GuardianAPIClient:
     def __init__(self, api_key=None):
@@ -40,12 +42,16 @@ class GuardianAPIClient:
 
             articles = []
             for i in results:
-                articles.append({
-                    "webPublicationDate": i.get("webPublicationDate"),
-                    "webTitle": i.get("webTitle"),
-                    "webUrl": i.get("webUrl"),
-                    "content preview": i.get("fields", {}).get("bodyText", "")[:1000]
-                })
+                articles.append(
+                    {
+                        "webPublicationDate": i.get("webPublicationDate"),
+                        "webTitle": i.get("webTitle"),
+                        "webUrl": i.get("webUrl"),
+                        "content preview": i.get("fields", {}).get("bodyText", "")[
+                            :1000
+                        ],
+                    }
+                )
             return articles
 
         except requests.exceptions.RequestException as e:

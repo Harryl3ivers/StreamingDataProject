@@ -18,34 +18,44 @@ from guardian_client import GuardianAPIClient
 from kinesis_publisher import KinesisPublisher
 import os
 from dotenv import load_dotenv
- 
+
+
 def main():
     load_dotenv()
     GUARDIAN_API_KEY = os.getenv("GUARDIAN_API_KEY")
-    GUARDIAN_API_KEY= os.getenv("GUARDIAN_API_KEY")
-    AWS_ACCESS_KEY_ID= os.getenv("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY= os.getenv("AWS_SECRET_ACCESS_KEY")
-    AWS_REGION= os.getenv("AWS_REGION")
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+    AWS_REGION = os.getenv("AWS_REGION")
     LOCAL_KINESIS_ENDPOINT_URL = os.getenv("LOCAL_KINESIS_ENDPOINT_URL")
     KINESS_SHARD_COUNT = int(os.getenv("KINESS_SHARD_COUNT", 1))
-
 
     if not GUARDIAN_API_KEY:
         raise ValueError(
             "API key not found. Please set the 'api_key' environment variable."
         )
-        """checks if  the guradian api is found, if not, it raises an error ."""     
+        """checks if  the guradian api is found, if not, it raises an error ."""
 
-
-    parser = argparse.ArgumentParser(description="Fetch articles from The Guardian API and publish to AWS Kinesis.")
-    parser.add_argument("search_term", type=str, help="Search term for fetching articles.")
-    parser.add_argument("date_from", type=str, help="Start date for fetching articles in YYYY-MM-DD format.")
-    parser.add_argument("stream_name", type=str, help="Name of the AWS Kinesis stream.") #
-    args = parser.parse_args() # parses the arguments from the command line
+    parser = argparse.ArgumentParser(
+        description="Fetch articles from The Guardian API and publish to AWS Kinesis."
+    )
+    parser.add_argument(
+        "search_term", type=str, help="Search term for fetching articles."
+    )
+    parser.add_argument(
+        "date_from",
+        type=str,
+        help="Start date for fetching articles in YYYY-MM-DD format.",
+    )
+    parser.add_argument(
+        "stream_name", type=str, help="Name of the AWS Kinesis stream."
+    )  #
+    args = parser.parse_args()  # parses the arguments from the command line
 
     try:
         client = GuardianAPIClient(GUARDIAN_API_KEY)
-        articles = client.get_articles(args.search_term, args.date_from)  # fetches articles using the api client
+        articles = client.get_articles(
+            args.search_term, args.date_from
+        )  # fetches articles using the api client
         if articles:
             publisher = KinesisPublisher(
                 stream_name=args.stream_name,
@@ -53,7 +63,7 @@ def main():
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
                 endpoint_url=LOCAL_KINESIS_ENDPOINT_URL,
-                shard_count=KINESS_SHARD_COUNT
+                shard_count=KINESS_SHARD_COUNT,
             )
 
             publisher.publish_articles(articles)
@@ -62,6 +72,6 @@ def main():
     except Exception as e:
         print(f"An error occurred: {e}")
 
+
 if __name__ == "__main__":
     main()
-     
