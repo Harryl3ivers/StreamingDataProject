@@ -38,7 +38,7 @@ class TestGuardianApi(unittest.TestCase):
             "https://www.theguardian.com/sample-article-1",
         )
         self.assertEqual(articles[0]["webPublicationDate"], "2025-10-01T12:00:00Z")
-        self.assertIn("content preview", articles[0])
+        self.assertIn("content_preview", articles[0])
 
         # Verify requests.get was called with correct parameters
         mock_get.assert_called_once()

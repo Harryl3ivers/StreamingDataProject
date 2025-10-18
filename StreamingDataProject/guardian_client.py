@@ -47,7 +47,7 @@ class GuardianAPIClient:
                         "webPublicationDate": i.get("webPublicationDate"),
                         "webTitle": i.get("webTitle"),
                         "webUrl": i.get("webUrl"),
-                        "content preview": i.get("fields", {}).get("bodyText", "")[
+                        "content_preview": i.get("fields", {}).get("bodyText", "")[
                             :1000
                         ],
                     }

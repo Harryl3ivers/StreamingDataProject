@@ -103,5 +103,5 @@ class KinesisPublisher:
                     StreamName=self.stream_name, RetentionPeriodHours=72
                 )
             else:
-                
+
                 raise

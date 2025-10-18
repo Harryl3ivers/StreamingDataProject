@@ -57,7 +57,7 @@ def read_kinesis_stream(
 if __name__ == "__main__":
     # Check if stream name is provided as argument
     if len(sys.argv) < 2:
-        print("Usage: python blah.py <stream_name>")
+        print("Usage: python read_kinesis_stream.py <stream_name>")
         sys.exit(1)
 
     stream_name = sys.argv[1]

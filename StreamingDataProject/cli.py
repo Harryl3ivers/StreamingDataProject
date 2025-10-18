@@ -27,7 +27,7 @@ def main():
     AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
     AWS_REGION = os.getenv("AWS_REGION")
     LOCAL_KINESIS_ENDPOINT_URL = os.getenv("LOCAL_KINESIS_ENDPOINT_URL")
-    KINESS_SHARD_COUNT = int(os.getenv("KINESS_SHARD_COUNT", 1))
+    KINESIS_SHARD_COUNT = int(os.getenv("KINESIS_SHARD_COUNT", 1))
 
     if not GUARDIAN_API_KEY:
         raise ValueError(
@@ -46,9 +46,7 @@ def main():
         type=str,
         help="Start date for fetching articles in YYYY-MM-DD format.",
     )
-    parser.add_argument(
-        "stream_name", type=str, help="Name of the AWS Kinesis stream."
-    )  #
+    parser.add_argument("stream_name", type=str, help="Name of the AWS Kinesis stream.")
     args = parser.parse_args()  # parses the arguments from the command line
 
     try:
@@ -63,7 +61,7 @@ def main():
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
                 endpoint_url=LOCAL_KINESIS_ENDPOINT_URL,
-                shard_count=KINESS_SHARD_COUNT,
+                shard_count=KINESIS_SHARD_COUNT,
             )
 
             publisher.publish_articles(articles)
